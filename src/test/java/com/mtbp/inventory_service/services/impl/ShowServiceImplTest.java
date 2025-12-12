@@ -216,16 +216,48 @@ public class ShowServiceImplTest {
         show.setMovie(movie);
         show.setTheatre(theatre);
 
+        // DTO for show 1
+        ShowDTO dto1 = new ShowDTO(
+                show.getId().toString(),
+                movie.getId().toString(),
+                "Movie Title",
+                theatre.getId().toString(),
+                theatre.getName(),
+                show.getShowDate(),
+                show.getStartTime(),
+                null,
+                100.0,
+                "MORNING"
+        );
+
         // --- Setup 2nd Show ---
         Show show2 = new Show();
         show2.setId(UUID.randomUUID());
         show2.setMovie(movie);
-        show2.setTheatre(theatre);        // SAME THEATRE -> should group
+        show2.setTheatre(theatre);
         show2.setShowDate(LocalDate.now());
         show2.setStartTime(LocalTime.of(12, 0));
 
-        // Mock Repo: return both shows
-        when(showRepository.findAll(any(Specification.class))).thenReturn(List.of(show, show2));
+        ShowDTO dto2 = new ShowDTO(
+                show2.getId().toString(),
+                movie.getId().toString(),
+                "Movie Title",
+                theatre.getId().toString(),
+                theatre.getName(),
+                show2.getShowDate(),
+                show2.getStartTime(),
+                null,
+                120.0,
+                "AFTERNOON"
+        );
+
+        // Mock Mapper
+        when(showMapper.toDTO(show)).thenReturn(dto1);
+        when(showMapper.toDTO(show2)).thenReturn(dto2);
+
+        // Mock Repo returning both shows
+        when(showRepository.findAll(any(Specification.class)))
+                .thenReturn(List.of(show, show2));
 
         // Call Service
         List<ShowResponseDTO> result = service.getShowsByCityMovieAndDate(
@@ -235,8 +267,27 @@ public class ShowServiceImplTest {
         );
 
         // Assertions
-        assertThat(result).hasSize(1); // Both grouped by same theatre
-        assertThat(result.get(0).showTimes())
-                .containsExactly(LocalTime.of(10, 0), LocalTime.of(12, 0));
+        assertThat(result).hasSize(1); // grouped by same theatre
+
+        ShowResponseDTO responseDTO = result.get(0);
+
+        // Check theatre info
+        assertThat(responseDTO.theatreId()).isEqualTo(theatre.getId().toString());
+        assertThat(responseDTO.theatreName()).isEqualTo(theatre.getName());
+
+        // Check showDetails is a Map with 2 entries
+        assertThat(responseDTO.showDetails()).hasSize(2);
+
+        // Check keys contain both show IDs
+        assertThat(responseDTO.showDetails().keySet())
+                .containsExactly(show.getId().toString(), show2.getId().toString());
+        // Sorted order: 10:00 then 12:00
+
+        // Check individual DTO values
+        assertThat(responseDTO.showDetails().get(show.getId().toString()))
+                .isEqualTo(dto1);
+
+        assertThat(responseDTO.showDetails().get(show2.getId().toString()))
+                .isEqualTo(dto2);
     }
 }

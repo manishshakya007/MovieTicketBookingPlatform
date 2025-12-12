@@ -209,13 +209,21 @@ public class ShowServiceImpl implements ShowService {
         List<ShowResponseDTO> response = new ArrayList<>();
 
         grouped.forEach((theatreId, showList) -> {
+
+            Map<String, ShowDTO> showDetailsMap =
+                    showList.stream()
+                            .sorted(Comparator.comparing(Show::getStartTime))
+                            .collect(Collectors.toMap(
+                                    s -> s.getId().toString(),   // key = showId
+                                    s -> showMapper.toDTO(s),     // value = ShowDTO
+                                    (a, b) -> a,
+                                    LinkedHashMap::new            // preserve sorted order
+                            ));
+
             response.add(new ShowResponseDTO(
                     theatreId.toString(),
                     showList.getFirst().getTheatre().getName(),
-                    showList.stream()
-                            .map(Show::getStartTime)
-                            .sorted()
-                            .toList()
+                    showDetailsMap
             ));
         });
 
