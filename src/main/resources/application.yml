@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: {DB_URL}
+    driverClassName: org.h2.Driver
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+
+    # Show SQL in logs
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+
+  # Enable H2 console
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
